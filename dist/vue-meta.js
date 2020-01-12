@@ -1,6 +1,6 @@
 /**
  * vue-meta v2.3.1
- * (c) 2019
+ * (c) 2020
  * - Declan de Wet
  * - Sébastien Chopin (@Atinux)
  * - Pim (@pimlie)
@@ -12,7 +12,7 @@
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
   (global = global || self, global.VueMeta = factory());
-}(this, function () { 'use strict';
+}(this, (function () { 'use strict';
 
   var version = "2.3.1";
 
@@ -655,13 +655,25 @@
     {
       return deepmerge;
     }
-
-    var customMerge = false(key);
-    return typeof customMerge === 'function' ? customMerge : deepmerge;
   }
 
   function getKeys(target) {
     return Object.keys(target);
+  }
+
+  function propertyIsOnObject(object, property) {
+    try {
+      return property in object;
+    } catch (_) {
+      return false;
+    }
+  } // Protects from prototype poisoning and unexpected merging up the prototype chain.
+
+
+  function propertyIsUnsafe(target, key) {
+    return propertyIsOnObject(target, key) // Properties are safe to merge if they don't exist in the target yet,
+    && !(Object.hasOwnProperty.call(target, key) // unsafe if they exist up the prototype chain,
+    && Object.propertyIsEnumerable.call(target, key)); // and also unsafe if they're nonenumerable.
   }
 
   function mergeObject(target, source, options) {
@@ -674,10 +686,14 @@
     }
 
     getKeys(source).forEach(function (key) {
-      if (!options.isMergeableObject(source[key]) || !target[key]) {
-        destination[key] = cloneUnlessOtherwiseSpecified(source[key]);
+      if (propertyIsUnsafe(target, key)) {
+        return;
+      }
+
+      if (propertyIsOnObject(target, key) && options.isMergeableObject(source[key])) {
+        destination[key] = getMergeFunction()(target[key], source[key], options);
       } else {
-        destination[key] = getMergeFunction(key)(target[key], source[key], options);
+        destination[key] = cloneUnlessOtherwiseSpecified(source[key]);
       }
     });
     return destination;
@@ -686,7 +702,10 @@
   function deepmerge(target, source, options) {
     options = options || {};
     options.arrayMerge = options.arrayMerge;
-    options.isMergeableObject = options.isMergeableObject || isMergeableObject;
+    options.isMergeableObject = options.isMergeableObject || isMergeableObject; // cloneUnlessOtherwiseSpecified is added to `options` so that custom arrayMerge()
+    // implementations can use it. The caller may not replace it.
+
+    falseUnlessOtherwiseSpecified = cloneUnlessOtherwiseSpecified;
     var sourceIsArray = Array.isArray(source);
     var targetIsArray = Array.isArray(target);
     var sourceAndTargetTypesMatch = sourceIsArray === targetIsArray;
@@ -1615,4 +1634,4 @@
 
   return index;
 
-}));
+})));

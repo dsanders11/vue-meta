@@ -1,6 +1,6 @@
 /**
  * vue-meta v2.3.1
- * (c) 2019
+ * (c) 2020
  * - Declan de Wet
  * - Sébastien Chopin (@Atinux)
  * - Pim (@pimlie)

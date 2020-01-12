@@ -1,6 +1,6 @@
 /**
  * vue-meta v2.3.1
- * (c) 2019
+ * (c) 2020
  * - Declan de Wet
  * - Sébastien Chopin (@Atinux)
  * - Pim (@pimlie)
@@ -43,6 +43,40 @@ function _defineProperty(obj, key, value) {
   }
 
   return obj;
+}
+
+function ownKeys(object, enumerableOnly) {
+  var keys = Object.keys(object);
+
+  if (Object.getOwnPropertySymbols) {
+    var symbols = Object.getOwnPropertySymbols(object);
+    if (enumerableOnly) symbols = symbols.filter(function (sym) {
+      return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+    });
+    keys.push.apply(keys, symbols);
+  }
+
+  return keys;
+}
+
+function _objectSpread2(target) {
+  for (var i = 1; i < arguments.length; i++) {
+    var source = arguments[i] != null ? arguments[i] : {};
+
+    if (i % 2) {
+      ownKeys(Object(source), true).forEach(function (key) {
+        _defineProperty(target, key, source[key]);
+      });
+    } else if (Object.getOwnPropertyDescriptors) {
+      Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+    } else {
+      ownKeys(Object(source)).forEach(function (key) {
+        Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+      });
+    }
+  }
+
+  return target;
 }
 
 function _toConsumableArray(arr) {
@@ -1714,10 +1748,32 @@ function generateServerInjector(options, metaInfo) {
             }
           }
 
+          if (serverInjector.extraData) {
+            for (var appId in serverInjector.extraData) {
+              var _data = serverInjector.extraData[appId][type];
+
+              if (_data) {
+                for (var _attr in _data) {
+                  attributeData[_attr] = _objectSpread2({}, attributeData[_attr], _defineProperty({}, appId, _data[_attr]));
+                }
+              }
+            }
+          }
+
           return attributeGenerator(options, type, attributeData, arg);
         }
 
         var str = tagGenerator(options, type, serverInjector.data[type], arg);
+
+        if (serverInjector.extraData) {
+          for (var _appId in serverInjector.extraData) {
+            var _data2 = serverInjector.extraData[_appId][type];
+            var extraStr = tagGenerator(options, type, _data2, _objectSpread2({
+              appId: _appId
+            }, arg));
+            str = "".concat(str).concat(extraStr);
+          }
+        }
 
         return str;
       }
